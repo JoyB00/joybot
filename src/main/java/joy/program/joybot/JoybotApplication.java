@@ -9,7 +9,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
-@EnableConfigurationProperties(StorageConfig.class)
+@EnableConfigurationProperties({StorageConfig.class})
 public class JoybotApplication {
 
 	public static void main(String[] args) {

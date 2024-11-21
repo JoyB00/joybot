@@ -13,27 +13,40 @@ import joy.program.joybot.config.StorageConfig;
 import joy.program.joybot.exception.StorageException;
 import joy.program.joybot.exception.StorageFileNotFoundException;
 import joy.program.joybot.repository.FileUploaderRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.reader.tika.TikaDocumentReader;
+import org.springframework.ai.transformer.splitter.TextSplitter;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-@Service
+@Slf4j
+@Component
 public class FileUploaderService implements FileUploaderRepository {
 
     private final Path rootLocation;
+    private final VectorStore vectorStore;
+    private final JdbcTemplate database;
+
 
     @Autowired
-    public FileUploaderService(StorageConfig properties) {
+    public FileUploaderService(StorageConfig properties, VectorStore vectorStore, JdbcTemplate database) {
 
         if(properties.getLocation().trim().length() == 0){
             throw new StorageException("File upload location can not be Empty.");
         }
 
         this.rootLocation = Paths.get(properties.getLocation());
+        this.vectorStore = vectorStore;
+        this.database = database;
     }
 
     @Override
@@ -53,6 +66,14 @@ public class FileUploaderService implements FileUploaderRepository {
             try (InputStream inputStream = file.getInputStream()) {
                 Files.copy(inputStream, destinationFile,
                         StandardCopyOption.REPLACE_EXISTING);
+
+                database.execute("DELETE FROM vector_store");
+
+                Resource resource = new UrlResource(destinationFile.toUri());
+                var pdfReader = new TikaDocumentReader(resource);
+                TextSplitter textSplitter = new TokenTextSplitter();
+                vectorStore.accept(textSplitter.apply(pdfReader.get()));
+
             }
         }
         catch (IOException e) {

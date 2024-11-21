@@ -1,7 +1,7 @@
-package joy.program.joybot.controller.FileUploader;
+package joy.program.joybot.controller.fileUploader;
 
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import joy.program.joybot.controller.FileUploader.DTO.FileUploaderRequest;
+import joy.program.joybot.controller.fileUploader.DTO.FileUploaderRequest;
 import joy.program.joybot.model.WebResponse;
 import joy.program.joybot.service.FileUploaderService;
 import lombok.RequiredArgsConstructor;

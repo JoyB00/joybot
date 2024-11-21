@@ -1,4 +1,4 @@
-package joy.program.joybot.controller.FileUploader.DTO;
+package joy.program.joybot.controller.fileUploader.DTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
