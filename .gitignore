@@ -19,6 +19,11 @@ target/
 *.iml
 *.ipr
 
+/src/main/resources/application.properties
+/upload-dir
+compose.yaml
+
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
