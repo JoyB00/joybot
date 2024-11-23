@@ -1,11 +1,6 @@
 package joy.program.joybot.controller.chat;
 
-import com.detectlanguage.DetectLanguage;
-import com.detectlanguage.Result;
-import com.detectlanguage.errors.APIError;
 import joy.program.joybot.controller.chat.DTO.ChatRequest;
-import joy.program.joybot.model.WebResponse;
-import joy.program.joybot.service.FileUploaderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor;
@@ -48,7 +43,7 @@ public class ChatController {
         PromptTemplate promptTemplate = new PromptTemplate(promptTemplateResource);
         Map<String,Object> promptParameters = new HashMap<>();
         promptParameters.put("input", request.getMessage());
-        promptParameters.put("documents", String.join("\n",findSimilarDocuments(request.getMessage())));
+        promptParameters.put("documents", String.join("\n", findSimilarDocuments(request.getMessage())));
 
         return chatClient.prompt(promptTemplate.create(promptParameters))
                 .user(request.getMessage())
