@@ -20,7 +20,7 @@ public class JoybotApplication {
 	@Bean
 	CommandLineRunner init (FileUploaderService fileUploaderService){
 		return (args) -> {
-			fileUploaderService.deleteAll();
+//			fileUploaderService.deleteAll();
 			fileUploaderService.init();
 		};
 	}
