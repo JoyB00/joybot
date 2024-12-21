@@ -14,49 +14,42 @@ import joy.program.joybot.exception.StorageException;
 import joy.program.joybot.exception.StorageFileNotFoundException;
 import joy.program.joybot.repository.FileUploaderRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.reader.tika.TikaDocumentReader;
-import org.springframework.ai.transformer.splitter.TextSplitter;
-import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Component
-public class FileUploaderService implements FileUploaderRepository {
+public class ImageUploaderService implements FileUploaderRepository {
 
-    private final Path rootLocation;
     private final Path rootImageLocation;
     private final VectorStore vectorStore;
     private final JdbcTemplate database;
 
 
-    public FileUploaderService(StorageConfig properties, VectorStore vectorStore, JdbcTemplate database) {
+    public ImageUploaderService(StorageConfig properties, VectorStore vectorStore, JdbcTemplate database) {
 
         if(properties.getLocation().trim().isEmpty()){
             throw new StorageException("File upload location can not be Empty.");
         }
 
-        this.rootLocation = Paths.get(properties.getLocation());
         this.rootImageLocation = Paths.get(properties.getImageLocation());
         this.vectorStore = vectorStore;
         this.database = database;
     }
 
-    public void storeImage (MultipartFile file){
+    @Override
+    public void store (MultipartFile file){
         try {
             if (file.isEmpty()) {
                 throw new StorageException("Failed to store empty file.");
             }
             Path destinationFile = this.rootImageLocation.resolve(
-                    Paths.get(file.getOriginalFilename()))
+                            Paths.get(file.getOriginalFilename()))
                     .normalize().toAbsolutePath();
             if (!destinationFile.getParent().equals(this.rootImageLocation.toAbsolutePath())) {
                 // This is a security check
@@ -74,45 +67,12 @@ public class FileUploaderService implements FileUploaderRepository {
     }
 
 
-
-    @Override
-    public void store(MultipartFile file) {
-        try {
-            if (file.isEmpty()) {
-                throw new StorageException("Failed to store empty file.");
-            }
-            Path destinationFile = this.rootLocation.resolve(
-                            Paths.get(file.getOriginalFilename()))
-                    .normalize().toAbsolutePath();
-            if (!destinationFile.getParent().equals(this.rootLocation.toAbsolutePath())) {
-                // This is a security check
-                throw new StorageException(
-                        "Cannot store file outside current directory.");
-            }
-            try (InputStream inputStream = file.getInputStream()) {
-                Files.copy(inputStream, destinationFile,
-                        StandardCopyOption.REPLACE_EXISTING);
-
-                database.execute("DELETE FROM vector_store");
-
-                Resource resource = new UrlResource(destinationFile.toUri());
-                var pdfReader = new TikaDocumentReader(resource);
-                TextSplitter textSplitter = new TokenTextSplitter();
-                vectorStore.accept(textSplitter.apply(pdfReader.get()));
-
-            }
-        }
-        catch (IOException e) {
-            throw new StorageException("Failed to store file.", e);
-        }
-    }
-
     @Override
     public Stream<Path> loadAll() {
         try {
-            return Files.walk(this.rootLocation, 1)
-                    .filter(path -> !path.equals(this.rootLocation))
-                    .map(this.rootLocation::relativize);
+            return Files.walk(this.rootImageLocation, 1)
+                    .filter(path -> !path.equals(this.rootImageLocation))
+                    .map(this.rootImageLocation::relativize);
         }
         catch (IOException e) {
             throw new StorageException("Failed to read stored files", e);
@@ -122,7 +82,7 @@ public class FileUploaderService implements FileUploaderRepository {
 
     @Override
     public Path load(String filename) {
-        return rootLocation.resolve(filename);
+        return rootImageLocation.resolve(filename);
     }
 
     @Override
@@ -147,14 +107,14 @@ public class FileUploaderService implements FileUploaderRepository {
     @Override
     public void deleteAll() {
 
-        FileSystemUtils.deleteRecursively(rootLocation.toFile());
+        FileSystemUtils.deleteRecursively(rootImageLocation.toFile());
         FileSystemUtils.deleteRecursively(rootImageLocation.toFile());
     }
 
     @Override
     public void init() {
         try {
-            Files.createDirectories(rootLocation);
+            Files.createDirectories(rootImageLocation);
             Files.createDirectories(rootImageLocation);
         }
         catch (IOException e) {

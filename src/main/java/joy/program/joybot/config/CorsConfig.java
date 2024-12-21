@@ -8,11 +8,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
+        registry.addMapping("/api/**")
+                .allowedOrigins("http://localhost:5173", "https://joybot-fe.vercel.app")
+                .allowedMethods("GET", "POST")
+                .allowedHeaders("Authorization", "Content-Type")
                 .allowCredentials(true)
-                .maxAge(3600); // Cache preflight requests for 1 hour
+                .maxAge(3600);
     }
 }

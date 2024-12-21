@@ -6,6 +6,7 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
@@ -14,9 +15,9 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 public class ChatService {
-    private final VectorStore vectorStore;
+    @Autowired
+    private VectorStore vectorStore;
 
     public Prompt promptTemplateConfig(String message, Resource promptTemplateResource) {
         PromptTemplate promptTemplate = new PromptTemplate(promptTemplateResource);

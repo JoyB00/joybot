@@ -1,8 +1,12 @@
 package joy.program.joybot.controller.chat;
 
+import jakarta.servlet.http.HttpServletRequest;
 import joy.program.joybot.controller.chat.DTO.ChatRequest;
+import joy.program.joybot.controller.chat.DTO.ImageDetectorRequest;
+import joy.program.joybot.model.WebResponse;
 import joy.program.joybot.service.ChatService;
 import joy.program.joybot.service.FileUploaderService;
+import joy.program.joybot.service.ImageUploaderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor;
@@ -16,6 +20,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -29,16 +34,18 @@ public class ChatController {
     private final ChatClient chatClient;
     private final ChatService chatService;
     private final FileUploaderService fileUploaderService;
+    private final ImageUploaderService imageUploaderService;
 
     @Value("classpath:/prompts/prompt-template.st")
     private Resource promptTemplateResource;
 
-    public ChatController(ChatClient.Builder builder, PgVectorStore vectorStore, ChatService chatService, FileUploaderService fileUploaderService) {
+    public ChatController(ChatClient.Builder builder, PgVectorStore vectorStore, ChatService chatService, FileUploaderService fileUploaderService, ImageUploaderService imageUploaderService) {
         this.chatClient = builder
-                .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
+//                .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()))
                 .build();
         this.chatService = chatService;
         this.fileUploaderService = fileUploaderService;
+        this.imageUploaderService = imageUploaderService;
     }
 
     @PostMapping(path = ""
@@ -52,12 +59,31 @@ public class ChatController {
                 .content();
     }
 
-    @GetMapping("/image-detector")
-    public String imageDescribe(@RequestParam String message) throws IOException {
-        Resource imageResource = fileUploaderService.loadAsResource("images.jpeg");
-        return chatClient.prompt(chatService.promptTemplateConfig(message, promptTemplateResource))
-                .user(u->u.text(message).media(MimeTypeUtils.IMAGE_JPEG, imageResource))
-                .call()
-                .content();
+    @PostMapping(path = "/image-detector"
+            , produces = MediaType.APPLICATION_JSON_VALUE
+            , consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public String imageDescribe(HttpServletRequest request) throws IOException {
+        if (request instanceof MultipartHttpServletRequest) {
+            MultipartHttpServletRequest multipartRequest = (MultipartHttpServletRequest) request;
+            String imageName = multipartRequest.getParameter("imageName");
+            String message = multipartRequest.getParameter("message");
+
+            Resource imageResource = imageUploaderService.loadAsResource(imageName);
+
+            return chatClient.prompt()
+                    .user(u -> u.text(message).media(MimeTypeUtils.IMAGE_JPEG, imageResource))
+                    .call()
+                    .content();
+        } else {
+            throw new IllegalArgumentException("Request is not a multipart request");
+        }
+//        String response = chatClient.prompt()
+//                .user(u->u.text(request.getMessage()).media(MimeTypeUtils.IMAGE_JPEG, imageResource))
+//                .call()
+//                .content();
+//        return WebResponse.<String>builder()
+//                .data(response)
+//                .build();
     }
 }
